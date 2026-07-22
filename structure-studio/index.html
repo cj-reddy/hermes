@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#08090a" />
+  <title>Structure Studio — 3D space planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Structure Studio home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div><strong>Structure Studio</strong><span>3D space planner</span></div>
+      </div>
+      <label class="project-name"><span class="sr-only">Project name</span><input id="project-name" value="Untitled design" maxlength="60" /></label>
+      <nav class="top-actions" aria-label="Project actions">
+        <button id="undo" class="icon-button" title="Undo (Ctrl/⌘ Z)" aria-label="Undo">↶</button>
+        <button id="redo" class="icon-button" title="Redo (Ctrl/⌘ Shift Z)" aria-label="Redo">↷</button>
+        <span class="divider"></span>
+        <button id="save" class="button">Save</button>
+        <button id="export" class="button">Export</button>
+        <label class="button file-button">Import<input id="import-file" type="file" accept="application/json,.json" /></label>
+        <button id="screenshot" class="button primary">Snapshot</button>
+      </nav>
+    </header>
+
+    <aside class="sidebar library" aria-label="Design library">
+      <section>
+        <h2>Build</h2>
+        <div class="tool-grid" role="toolbar" aria-label="Building tools">
+          <button id="tool-select" class="tool active" data-tool="select"><span>↖</span>Select<kbd>1</kbd></button>
+          <button id="tool-room" class="tool" data-tool="room"><span>▢</span>Room<kbd>2</kbd></button>
+          <button id="tool-wall" class="tool" data-tool="wall"><span>╱</span>Wall<kbd>3</kbd></button>
+          <button class="tool" data-add="door"><span>▯</span>Door</button>
+          <button class="tool" data-add="window"><span>▭</span>Window</button>
+        </div>
+      </section>
+      <section>
+        <div class="section-heading"><h2>Furniture</h2><span>Drag after adding</span></div>
+        <div class="catalog">
+          <button class="catalog-item" data-add="sofa"><span class="catalog-icon sofa-icon"></span><b>Sofa</b></button>
+          <button class="catalog-item" data-add="bed"><span class="catalog-icon bed-icon"></span><b>Bed</b></button>
+          <button class="catalog-item" data-add="table"><span class="catalog-icon table-icon"></span><b>Table</b></button>
+          <button class="catalog-item" data-add="chair"><span class="catalog-icon chair-icon"></span><b>Chair</b></button>
+          <button class="catalog-item" data-add="cabinet"><span class="catalog-icon cabinet-icon"></span><b>Cabinet</b></button>
+          <button class="catalog-item" data-add="plant"><span class="catalog-icon plant-icon"></span><b>Plant</b></button>
+        </div>
+      </section>
+      <section class="tips">
+        <h2>Quick start</h2>
+        <p>Draw a room, add furniture, then select anything to move or rotate it.</p>
+        <div><kbd>⌫</kbd> Delete <kbd>D</kbd> Duplicate</div>
+      </section>
+    </aside>
+
+    <section class="workspace" aria-label="3D design canvas">
+      <div id="viewport" tabindex="0" aria-label="Interactive 3D viewport"></div>
+      <div class="viewport-toolbar">
+        <div class="segmented" aria-label="Transform mode">
+          <button id="move-mode" class="active" title="Move selected object">Move</button>
+          <button id="rotate-mode" title="Rotate selected object">Rotate</button>
+        </div>
+        <button id="view-toggle" class="view-button" title="Toggle plan and perspective view"><span id="view-icon">◇</span><span id="view-label">3D view</span></button>
+      </div>
+      <div class="zoom-controls" aria-label="Camera controls">
+        <button id="zoom-in" aria-label="Zoom in">+</button>
+        <button id="zoom-out" aria-label="Zoom out">−</button>
+        <button id="fit-view" aria-label="Fit design to view">⌂</button>
+      </div>
+      <div id="draw-hint" class="draw-hint hidden">Click and drag on the grid</div>
+      <div class="statusbar"><span id="status">Ready</span><span><i class="status-dot"></i>Autosave on</span><span id="object-count">0 objects</span></div>
+    </section>
+
+    <aside id="inspector" class="sidebar inspector" aria-label="Object inspector">
+      <div class="section-heading"><h2>Inspector</h2><span id="selection-type">Nothing selected</span></div>
+      <div id="empty-inspector" class="empty-state">
+        <div class="empty-cube" aria-hidden="true"></div>
+        <p>Select an object to edit its dimensions, position, and finish.</p>
+      </div>
+      <form id="object-fields" class="object-fields hidden">
+        <label class="field full"><span>Name</span><input id="object-name" type="text" /></label>
+        <fieldset><legend>Position</legend>
+          <label class="field"><span>X</span><input id="pos-x" type="number" step="0.25" /></label>
+          <label class="field"><span>Z</span><input id="pos-z" type="number" step="0.25" /></label>
+        </fieldset>
+        <fieldset><legend>Dimensions</legend>
+          <label class="field"><span>W</span><input id="size-x" type="number" min="0.1" step="0.1" /></label>
+          <label class="field"><span>H</span><input id="size-y" type="number" min="0.1" step="0.1" /></label>
+          <label class="field"><span>D</span><input id="size-z" type="number" min="0.1" step="0.1" /></label>
+        </fieldset>
+        <label class="field full color-field"><span>Finish</span><input id="object-color" type="color" /><output id="color-value">#ffffff</output></label>
+        <div class="inspector-actions">
+          <button type="button" id="duplicate-selected" class="button">Duplicate</button>
+          <button type="button" id="delete-selected" class="button danger">Delete</button>
+        </div>
+      </form>
+      <section class="scene-section">
+        <div class="section-heading"><h2>Scene</h2><button id="clear-scene" class="text-button">Clear all</button></div>
+        <label class="toggle-row"><span>Snap to grid<small>0.25 m increments</small></span><input id="snap-toggle" type="checkbox" checked /><i></i></label>
+        <label class="toggle-row"><span>Show grid<small>20 × 20 metres</small></span><input id="grid-toggle" type="checkbox" checked /><i></i></label>
+        <label class="toggle-row"><span>Wall transparency<small>See furniture inside</small></span><input id="walls-toggle" type="checkbox" checked /><i></i></label>
+      </section>
+    </aside>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
