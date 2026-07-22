@@ -4,14 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#08090a" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; worker-src 'none'" />
   <title>Structure Studio — 3D space planner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
-  <script type="importmap">
-    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}
-  </script>
+
 </head>
 <body>
   <main class="app-shell">
@@ -27,7 +26,8 @@
         <span class="divider"></span>
         <button id="save" class="button">Save</button>
         <button id="export" class="button">Export</button>
-        <label class="button file-button">Import<input id="import-file" type="file" accept="application/json,.json" /></label>
+        <button id="import-button" class="button" type="button">Import</button>
+        <input id="import-file" class="sr-only" type="file" accept="application/json,.json" tabindex="-1" aria-hidden="true" />
         <button id="screenshot" class="button primary">Snapshot</button>
       </nav>
     </header>
@@ -36,9 +36,9 @@
       <section>
         <h2>Build</h2>
         <div class="tool-grid" role="toolbar" aria-label="Building tools">
-          <button id="tool-select" class="tool active" data-tool="select"><span>↖</span>Select<kbd>1</kbd></button>
-          <button id="tool-room" class="tool" data-tool="room"><span>▢</span>Room<kbd>2</kbd></button>
-          <button id="tool-wall" class="tool" data-tool="wall"><span>╱</span>Wall<kbd>3</kbd></button>
+          <button id="tool-select" class="tool active" data-tool="select" aria-pressed="true"><span>↖</span>Select<kbd>1</kbd></button>
+          <button id="tool-room" class="tool" data-tool="room" aria-pressed="false"><span>▢</span>Room<kbd>2</kbd></button>
+          <button id="tool-wall" class="tool" data-tool="wall" aria-pressed="false"><span>╱</span>Wall<kbd>3</kbd></button>
           <button class="tool" data-add="door"><span>▯</span>Door</button>
           <button class="tool" data-add="window"><span>▭</span>Window</button>
         </div>
@@ -56,19 +56,19 @@
       </section>
       <section class="tips">
         <h2>Quick start</h2>
-        <p>Draw a room, add furniture, then select anything to move or rotate it.</p>
-        <div><kbd>⌫</kbd> Delete <kbd>D</kbd> Duplicate</div>
+        <p>Draw a room, add furniture, then select anything to move or rotate it. Keyboard activation adds a default room or wall.</p>
+        <div><kbd>←↑→↓</kbd> Move <kbd>Shift</kbd> + arrows rotate <kbd>⌫</kbd> Delete <kbd>D</kbd> Duplicate</div>
       </section>
     </aside>
 
     <section class="workspace" aria-label="3D design canvas">
-      <div id="viewport" tabindex="0" aria-label="Interactive 3D viewport"></div>
+      <div id="viewport" aria-label="Interactive 3D viewport"></div>
       <div class="viewport-toolbar">
         <div class="segmented" aria-label="Transform mode">
-          <button id="move-mode" class="active" title="Move selected object">Move</button>
-          <button id="rotate-mode" title="Rotate selected object">Rotate</button>
+          <button id="move-mode" class="active" title="Move selected object" aria-pressed="true">Move</button>
+          <button id="rotate-mode" title="Rotate selected object" aria-pressed="false">Rotate</button>
         </div>
-        <button id="view-toggle" class="view-button" title="Toggle plan and perspective view"><span id="view-icon">◇</span><span id="view-label">3D view</span></button>
+        <button id="view-toggle" class="view-button" title="Toggle plan and perspective view" aria-label="Switch to plan view" aria-pressed="false"><span id="view-icon">◇</span><span id="view-label">3D view</span></button>
       </div>
       <div class="zoom-controls" aria-label="Camera controls">
         <button id="zoom-in" aria-label="Zoom in">+</button>
@@ -81,12 +81,13 @@
 
     <aside id="inspector" class="sidebar inspector" aria-label="Object inspector">
       <div class="section-heading"><h2>Inspector</h2><span id="selection-type">Nothing selected</span></div>
+      <label class="field full object-picker"><span>Select object</span><select id="object-select"><option value="">Nothing selected</option></select></label>
       <div id="empty-inspector" class="empty-state">
         <div class="empty-cube" aria-hidden="true"></div>
         <p>Select an object to edit its dimensions, position, and finish.</p>
       </div>
       <form id="object-fields" class="object-fields hidden">
-        <label class="field full"><span>Name</span><input id="object-name" type="text" /></label>
+        <label class="field full"><span>Name</span><input id="object-name" type="text" maxlength="120" /></label>
         <fieldset><legend>Position</legend>
           <label class="field"><span>X</span><input id="pos-x" type="number" step="0.25" /></label>
           <label class="field"><span>Z</span><input id="pos-z" type="number" step="0.25" /></label>
